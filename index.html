@@ -1,0 +1,780 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MOVE · Control de Ventas</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+:root{
+  --bg:#f7f6f2;
+  --card:#ffffff;
+  --border:#e8e4dc;
+  --accent:#1a6b4a;
+  --accent2:#2d9b6d;
+  --accent-light:#e8f5ef;
+  --warn:#e07c2a;
+  --warn-light:#fef3e8;
+  --danger:#d63b3b;
+  --danger-light:#fdeaea;
+  --text:#1a1a18;
+  --muted:#6b7280;
+  --muted2:#9ca3af;
+  --font:'DM Sans',sans-serif;
+  --display:'Syne',sans-serif;
+  --mono:'DM Mono',monospace;
+  --shadow:0 1px 3px rgba(0,0,0,.06),0 4px 16px rgba(0,0,0,.05);
+  --shadow-lg:0 8px 32px rgba(0,0,0,.1);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh}
+
+/* ── NAV ── */
+nav{
+  background:var(--card);border-bottom:1px solid var(--border);
+  padding:0 24px;height:56px;
+  display:flex;align-items:center;justify-content:space-between;
+  position:sticky;top:0;z-index:100;
+}
+.nav-brand{display:flex;align-items:center;gap:10px;}
+.nav-logo{
+  width:32px;height:32px;border-radius:8px;
+  background:var(--accent);
+  display:flex;align-items:center;justify-content:center;
+  color:#fff;font-size:13px;font-weight:700;font-family:var(--display);
+}
+.nav-title{font-family:var(--display);font-weight:800;font-size:15px;letter-spacing:-.3px;}
+.nav-title span{color:var(--accent);}
+.nav-badge{
+  font-size:.68rem;font-weight:600;font-family:var(--mono);
+  background:var(--accent-light);color:var(--accent);
+  padding:3px 9px;border-radius:20px;border:1px solid rgba(26,107,74,.15);
+  letter-spacing:.3px;
+}
+.nav-right{display:flex;align-items:center;gap:10px;}
+#syncBadge{font-size:.7rem;color:var(--muted);display:flex;align-items:center;gap:4px;}
+
+/* ── LAYOUT ── */
+.main{display:flex;min-height:calc(100vh - 56px);}
+aside{
+  width:220px;flex-shrink:0;background:var(--card);
+  border-right:1px solid var(--border);padding:20px 0;
+  position:sticky;top:56px;height:calc(100vh - 56px);overflow-y:auto;
+}
+.sb-section{margin-bottom:4px;}
+.sb-label{
+  font-size:.6rem;font-weight:700;text-transform:uppercase;
+  letter-spacing:1px;color:var(--muted2);
+  padding:12px 18px 6px;
+}
+.sb-item{
+  display:flex;align-items:center;gap:8px;
+  padding:8px 18px;font-size:.82rem;font-weight:500;
+  color:var(--muted);cursor:pointer;transition:all .15s;
+  border-left:2px solid transparent;
+}
+.sb-item:hover{background:var(--bg);color:var(--text);}
+.sb-item.active{
+  background:var(--accent-light);color:var(--accent);
+  border-left-color:var(--accent);font-weight:600;
+}
+.sb-item i{font-size:.75rem;width:14px;text-align:center;}
+.content{flex:1;padding:28px 28px 60px;max-width:1100px;}
+
+/* ── SECCIONES ── */
+.section{display:none;}
+.section.active{display:block;}
+
+/* ── PAGE HEADER ── */
+.page-hd{margin-bottom:24px;}
+.page-hd h1{font-family:var(--display);font-size:1.5rem;font-weight:800;letter-spacing:-.5px;}
+.page-hd p{font-size:.82rem;color:var(--muted);margin-top:3px;}
+.page-hd-row{display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:12px;}
+
+/* ── CARDS ── */
+.card{
+  background:var(--card);border:1px solid var(--border);
+  border-radius:14px;padding:20px;box-shadow:var(--shadow);
+}
+.card-title{
+  font-size:.68rem;font-weight:700;text-transform:uppercase;
+  letter-spacing:.8px;color:var(--muted);margin-bottom:14px;
+  display:flex;align-items:center;gap:6px;
+}
+.card-title i{color:var(--accent);}
+
+/* ── KPI GRID ── */
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;margin-bottom:20px;}
+.kpi{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;position:relative;overflow:hidden;}
+.kpi::before{content:'';position:absolute;top:0;left:0;width:3px;height:100%;background:var(--accent);}
+.kpi.warn::before{background:var(--warn);}
+.kpi.danger::before{background:var(--danger);}
+.kpi-val{font-size:1.8rem;font-weight:800;font-family:var(--mono);letter-spacing:-1px;line-height:1;}
+.kpi-lbl{font-size:.65rem;font-weight:600;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin-top:5px;}
+.kpi-sub{font-size:.72rem;color:var(--muted);margin-top:3px;}
+.kpi-trend{
+  font-size:.68rem;font-weight:700;font-family:var(--mono);
+  margin-top:6px;display:flex;align-items:center;gap:3px;
+}
+.trend-up{color:var(--accent);}
+.trend-warn{color:var(--warn);}
+.trend-down{color:var(--danger);}
+
+/* ── TABLA ── */
+.tw{overflow-x:auto;margin-top:6px;}
+table{width:100%;border-collapse:collapse;font-size:.82rem;}
+th{
+  font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.6px;
+  color:var(--muted);padding:8px 12px;text-align:left;
+  border-bottom:1px solid var(--border);background:var(--bg);
+}
+td{padding:10px 12px;border-bottom:1px solid var(--border);vertical-align:middle;}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:var(--bg);}
+
+/* ── BADGE ── */
+.badge{display:inline-flex;align-items:center;gap:3px;font-size:.68rem;font-weight:700;padding:2px 8px;border-radius:20px;}
+.badge-g{background:#d1fae5;color:#065f46;}
+.badge-y{background:#fef3c7;color:#92400e;}
+.badge-r{background:#fee2e2;color:#991b1b;}
+.badge-b{background:#dbeafe;color:#1e40af;}
+
+/* ── PROGRESS BAR ── */
+.prog-wrap{margin-top:6px;}
+.prog-bar{height:5px;background:#e5e7eb;border-radius:3px;overflow:hidden;}
+.prog-fill{height:100%;border-radius:3px;transition:width .6s cubic-bezier(.4,0,.2,1);}
+
+/* ── BOTONES ── */
+.btn-primary{
+  display:inline-flex;align-items:center;gap:7px;
+  background:var(--accent);color:#fff;
+  font-size:.8rem;font-weight:600;padding:8px 16px;
+  border-radius:8px;cursor:pointer;border:none;
+  font-family:var(--font);transition:opacity .15s;
+}
+.btn-primary:hover{opacity:.88;}
+.btn-secondary{
+  display:inline-flex;align-items:center;gap:7px;
+  background:var(--card);color:var(--text);
+  border:1px solid var(--border);
+  font-size:.8rem;font-weight:500;padding:8px 16px;
+  border-radius:8px;cursor:pointer;font-family:var(--font);
+  transition:background .15s;
+}
+.btn-secondary:hover{background:var(--bg);}
+
+/* ── RECEPCIONISTA CARDS ── */
+.recep-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;margin-bottom:20px;}
+.recep-card{
+  background:var(--card);border:1px solid var(--border);
+  border-radius:14px;padding:18px;cursor:pointer;
+  transition:all .2s;position:relative;overflow:hidden;
+}
+.recep-card::after{
+  content:'';position:absolute;bottom:0;left:0;right:0;height:3px;
+  background:linear-gradient(90deg,var(--accent),var(--accent2));
+  transform:scaleX(0);transform-origin:left;transition:transform .25s;
+}
+.recep-card:hover{border-color:var(--accent2);box-shadow:var(--shadow-lg);transform:translateY(-2px);}
+.recep-card:hover::after{transform:scaleX(1);}
+.recep-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;}
+.recep-avatar{
+  width:40px;height:40px;border-radius:10px;
+  background:var(--accent);color:#fff;
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--display);font-weight:800;font-size:1rem;
+}
+.recep-name{font-family:var(--display);font-weight:800;font-size:.95rem;}
+.recep-sede{font-size:.72rem;color:var(--muted);margin-top:1px;}
+.recep-kpis{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px;}
+.recep-kpi{background:var(--bg);border-radius:8px;padding:8px 10px;}
+.recep-kpi-val{font-size:1.1rem;font-weight:800;font-family:var(--mono);}
+.recep-kpi-lbl{font-size:.6rem;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-top:1px;}
+
+/* ── MES SELECTOR ── */
+.mes-tabs{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:18px;}
+.mes-tab{
+  padding:5px 12px;border-radius:6px;font-size:.75rem;font-weight:600;
+  cursor:pointer;border:1px solid var(--border);background:var(--card);
+  color:var(--muted);transition:all .15s;
+}
+.mes-tab.active{background:var(--accent);color:#fff;border-color:var(--accent);}
+.mes-tab:hover:not(.active){background:var(--bg);}
+
+/* ── OBJETIVO BAR ── */
+.obj-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);}
+.obj-row:last-child{border-bottom:none;}
+.obj-name{font-size:.8rem;font-weight:500;flex:1;min-width:120px;}
+.obj-bar-wrap{flex:2;min-width:100px;}
+.obj-nums{font-size:.75rem;font-family:var(--mono);color:var(--muted);min-width:70px;text-align:right;}
+.obj-pct{font-size:.78rem;font-weight:700;font-family:var(--mono);min-width:40px;text-align:right;}
+
+/* ── LOADING OVERLAY ── */
+#loadOv{
+  position:fixed;inset:0;background:var(--bg);
+  display:flex;flex-direction:column;justify-content:center;align-items:center;gap:14px;
+  z-index:500;transition:opacity .3s;
+}
+.spinner{
+  width:36px;height:36px;border-radius:50%;
+  border:3px solid var(--border);border-top-color:var(--accent);
+  animation:spin .7s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+#loadOv p{font-size:.82rem;color:var(--muted);}
+
+/* ── EMPTY STATE ── */
+.empty{text-align:center;padding:48px 20px;color:var(--muted);}
+.empty i{font-size:2rem;opacity:.2;display:block;margin-bottom:10px;}
+
+/* ── RESPONSIVE ── */
+@media(max-width:768px){
+  aside{display:none;}
+  .content{padding:16px 16px 60px;}
+  .kpi-grid{grid-template-columns:1fr 1fr;}
+}
+</style>
+</head>
+<body>
+
+<div id="loadOv">
+  <div class="spinner"></div>
+  <p>Cargando datos de ventas...</p>
+</div>
+
+<nav>
+  <div class="nav-brand">
+    <div class="nav-logo">M</div>
+    <div class="nav-title">MOVE <span>Ventas</span></div>
+  </div>
+  <div class="nav-right">
+    <div id="syncBadge"><i class="fas fa-circle" style="font-size:.5rem;color:var(--accent)"></i> En vivo</div>
+    <span class="nav-badge"><i class="fas fa-chart-line" style="margin-right:4px"></i>Control de Ventas</span>
+  </div>
+</nav>
+
+<div class="main">
+<aside>
+  <div class="sb-section">
+    <div class="sb-label">General</div>
+    <div class="sb-item active" onclick="nav('overview')"><i class="fas fa-th-large"></i> Overview</div>
+  </div>
+  <div class="sb-section">
+    <div class="sb-label">Lago Puelo</div>
+    <div class="sb-item" onclick="nav('ara')"><i class="fas fa-user"></i> Ara</div>
+    <div class="sb-item" onclick="nav('azul')"><i class="fas fa-user"></i> Azul</div>
+  </div>
+  <div class="sb-section">
+    <div class="sb-label">Bariloche</div>
+    <div class="sb-item" onclick="nav('keila')"><i class="fas fa-user"></i> Keila</div>
+    <div class="sb-item" onclick="nav('ruben')"><i class="fas fa-user"></i> Rubén</div>
+  </div>
+  <div class="sb-section">
+    <div class="sb-label">El Bolsón</div>
+    <div class="sb-item" onclick="nav('tani')"><i class="fas fa-user"></i> Tani</div>
+    <div class="sb-item" onclick="nav('lucia')"><i class="fas fa-user"></i> Lucía</div>
+  </div>
+</aside>
+
+<div class="content">
+
+<!-- OVERVIEW -->
+<div class="section active" id="section-overview">
+  <div class="page-hd-row">
+    <div class="page-hd">
+      <h1>Control de Ventas</h1>
+      <p>Comparativa de recepcionistas · Datos en tiempo real</p>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;">
+      <div id="mesSel" style="display:flex;gap:4px;flex-wrap:wrap;"></div>
+      <button class="btn-primary" onclick="cargarTodos()"><i class="fas fa-rotate-right"></i> Actualizar</button>
+    </div>
+  </div>
+  <div class="kpi-grid" id="ovKpis"></div>
+  <div class="recep-grid" id="recepGrid"></div>
+  <div class="card">
+    <div class="card-title"><i class="fas fa-chart-bar"></i>Comparativa — Ventas de Nuevos</div>
+    <div style="height:200px;position:relative;"><canvas id="chartComparativa"></canvas></div>
+  </div>
+</div>
+
+<!-- DETALLE RECEPCIONISTA (template, se genera dinámicamente) -->
+<div class="section" id="section-recep">
+  <div class="page-hd-row">
+    <div class="page-hd">
+      <h1 id="recepTitle">—</h1>
+      <p id="recepSub">—</p>
+    </div>
+    <button class="btn-secondary" onclick="nav('overview')"><i class="fas fa-arrow-left" style="font-size:.7rem"></i> Volver</button>
+  </div>
+  <div class="mes-tabs" id="recepMesTabs"></div>
+  <div class="kpi-grid" id="recepKpis"></div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:20px;">
+    <div class="card">
+      <div class="card-title"><i class="fas fa-bullseye"></i>Objetivos del Mes</div>
+      <div id="recepObjs"></div>
+    </div>
+    <div class="card">
+      <div class="card-title"><i class="fas fa-chart-line"></i>Evolución Anual</div>
+      <div style="height:160px;position:relative;"><canvas id="chartEvol"></canvas></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title"><i class="fas fa-calendar"></i>Historial Mensual</div>
+    <div class="tw">
+      <table>
+        <thead>
+          <tr>
+            <th>Mes</th>
+            <th>Ventas Nuevos</th>
+            <th>Planes 3m</th>
+            <th>Indumentaria</th>
+            <th>Mensajes</th>
+            <th>Días Prueba</th>
+            <th>Puntaje</th>
+            <th>Estado</th>
+          </tr>
+        </thead>
+        <tbody id="recepTable"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+</div><!-- /content -->
+</div><!-- /main -->
+
+<script>
+// ══════════════════════════════════════════════════
+// CONFIGURACIÓN RECEPCIONISTAS
+// ══════════════════════════════════════════════════
+const RECEPCIONISTAS = [
+  {id:'ara',   name:'Ara',   sede:'Lago Puelo', sheetId:'1fxCZ01-4qmKUt27GvLUBk_vIRR4Jym3W', gid:'1934895', color:'#1a6b4a'},
+  {id:'azul',  name:'Azul',  sede:'Lago Puelo', sheetId:'1XpEKL2YvVTfI0YzrWrTii8ZeuTbCTQcW', gid:'1934895', color:'#2563eb'},
+  {id:'keila', name:'Keila', sede:'Bariloche',  sheetId:'1fxFcaVDcwyeJP01zuF9ngD7e_Il9b8KZ', gid:'1934895', color:'#7c3aed'},
+  {id:'ruben', name:'Rubén', sede:'Bariloche',  sheetId:'1vjxGOb549gQV12gD3_oPZytimSsPTJEl', gid:'1934895', color:'#b45309'},
+  {id:'tani',  name:'Tani',  sede:'El Bolsón',  sheetId:'1olzZWq8VgdUo63M6P6_U8Br8l-SPw_PO', gid:'1934895', color:'#db2777'},
+  {id:'lucia', name:'Lucía', sede:'El Bolsón',  sheetId:'1LTKqNKK9emHZ6GjH6Db80H_T96NUqFxc', gid:'1934895', color:'#0891b2'},
+];
+
+const MESES = ['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV','DIC'];
+const MESES_FULL = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+const OBJ = {ventas:20, planes3m:10, indumentaria:5, mensajes:100, prueba:2};
+
+// Datos cargados: {id: [{mes, ventas, planes3m, indumentaria, mensajes, prueba, averig, puntaje}]}
+const datosRecep = {};
+let currentRecep = null;
+let currentMes = new Date().getMonth(); // 0-based
+let chartComp = null, chartEvol = null;
+
+// ══════════════════════════════════════════════════
+// PARSEO CSV — CONTROL DE VENTAS
+// ══════════════════════════════════════════════════
+function parsearCSVVentas(csv){
+  const lines = csv.split('\n').map(l=>l.split(','));
+  const meses = [];
+
+  // El CONTROL DE VENTAS tiene esta estructura:
+  // Fila "ventas de Nuevos": OBJ, CTRL_ENE, OBJ, CTRL_FEB...
+  // Agrupadas de a 2 cols por mes (Objetivos, control)
+  // Buscamos las filas con métricas
+
+  let ventasRow, planes3mRow, indumRow, msjRow, pruebaRow, averigRow, puntajeRow;
+
+  for(let i=0; i<Math.min(lines.length,60); i++){
+    const row = lines[i];
+    const cell = (row[1]||row[0]||'').toLowerCase().trim();
+    if(cell.includes('ventas de nuevos') || cell.includes('ventas nuevos')) ventasRow = i;
+    else if(cell.includes('planes de 3') || cell.includes('plan de 3')) planes3mRow = i;
+    else if(cell.includes('indumentaria') || cell.includes('venta de indum')) indumRow = i;
+    else if(cell.includes('mensajes enviados') || cell.includes('mensajes')) msjRow = i;
+    else if(cell.includes('dias de prueba') || cell.includes('días de prueba')) pruebaRow = i;
+    else if(cell.includes('averiguadores')) averigRow = i;
+    else if(cell.includes('puntaje total')) puntajeRow = i;
+  }
+
+  // Columnas: los datos están en pares (obj, ctrl) por mes
+  // Enero: cols 3,4 | Febrero: cols 5,6 | Marzo: cols 7,8 | Abril: cols 9,10
+  // Mayo: cols 3,4 (del bloque siguiente) etc.
+  // PERO hay que encontrar los offsets correctos parseando el CSV
+
+  // Estrategia: buscar "Enero" en las filas de encabezado y mapear columnas
+  // El patrón es: ,Objetivos,control,Objetivos,control,...
+  let colOffset = -1;
+  for(let i=0; i<Math.min(lines.length,10); i++){
+    const row = lines[i];
+    for(let j=0; j<row.length; j++){
+      if((row[j]||'').trim().toLowerCase().includes('enero')){
+        colOffset = j;
+        break;
+      }
+    }
+    if(colOffset>=0) break;
+  }
+
+  // Si no encontramos Enero, usar offset por defecto (col 3)
+  if(colOffset < 0) colOffset = 3;
+
+  function getVal(rowIdx, mesIdx){
+    if(rowIdx === undefined || rowIdx < 0) return 0;
+    const row = lines[rowIdx];
+    if(!row) return 0;
+    // Para meses 0-3 (ENE-ABR): colOffset + mesIdx*2 + 1 (ctrl)
+    // Para meses 4-7 (MAY-AGO): siguiente bloque
+    // Para meses 8-11 (SEP-DIC): tercer bloque
+    const bloque = Math.floor(mesIdx / 4);
+    const mesEnBloque = mesIdx % 4;
+    // Buscar la fila de ese bloque
+    const col = colOffset + mesEnBloque * 2 + 1; // +1 para "control"
+    // Si hay múltiples bloques, la fila se repite
+    // Buscamos la fila con el mismo label pero en el bloque correcto
+    let targetRow = rowIdx;
+    if(bloque > 0){
+      // Buscar la siguiente ocurrencia del mismo label
+      const label = (lines[rowIdx][1]||lines[rowIdx][0]||'').toLowerCase().trim();
+      let count = 0;
+      for(let i=0; i<lines.length; i++){
+        const c = (lines[i][1]||lines[i][0]||'').toLowerCase().trim();
+        if(c === label){ count++; if(count-1 === bloque){ targetRow = i; break; } }
+      }
+    }
+    const v = (lines[targetRow]?.[col]||'').trim().replace('#DIV/0!','0').replace(/[^\d.-]/g,'');
+    return parseFloat(v)||0;
+  }
+
+  for(let m=0; m<12; m++){
+    meses.push({
+      mes: m,
+      mesLabel: MESES[m],
+      ventas:      getVal(ventasRow, m),
+      planes3m:    getVal(planes3mRow, m),
+      indumentaria:getVal(indumRow, m),
+      mensajes:    getVal(msjRow, m),
+      prueba:      getVal(pruebaRow, m),
+      averig:      getVal(averigRow, m),
+      puntaje:     getVal(puntajeRow, m),
+    });
+  }
+  return meses;
+}
+
+// ══════════════════════════════════════════════════
+// CARGA DE DATOS
+// ══════════════════════════════════════════════════
+async function cargarRecep(r){
+  try {
+    const url = `https://docs.google.com/spreadsheets/d/${r.sheetId}/export?format=csv&gid=${r.gid}`;
+    const resp = await fetch(url);
+    const csv = await resp.text();
+    datosRecep[r.id] = parsearCSVVentas(csv);
+  } catch(e){
+    console.warn(`Error cargando ${r.name}:`, e);
+    // Datos demo si falla
+    datosRecep[r.id] = MESES.map((m,i)=>({
+      mes:i, mesLabel:m,
+      ventas:0, planes3m:0, indumentaria:0, mensajes:0, prueba:0, averig:0, puntaje:0
+    }));
+  }
+}
+
+async function cargarTodos(){
+  document.getElementById('syncBadge').innerHTML='<i class="fas fa-spinner fa-spin" style="font-size:.6rem"></i> Cargando...';
+  await Promise.all(RECEPCIONISTAS.map(r=>cargarRecep(r)));
+  document.getElementById('syncBadge').innerHTML='<i class="fas fa-check-circle" style="font-size:.6rem;color:var(--accent)"></i> Actualizado';
+  renderOverview();
+  if(currentRecep) renderDetalle(currentRecep);
+  setTimeout(()=>{ document.getElementById('syncBadge').innerHTML='<i class="fas fa-circle" style="font-size:.5rem;color:var(--accent)"></i> En vivo'; }, 3000);
+}
+
+// ══════════════════════════════════════════════════
+// RENDER OVERVIEW
+// ══════════════════════════════════════════════════
+function renderOverview(){
+  const mes = currentMes;
+
+  // KPIs globales
+  let totalVentas=0, totalMensajes=0, totalPuntaje=0, totalPlanes=0;
+  let conDataCount = 0;
+  RECEPCIONISTAS.forEach(r=>{
+    const d = datosRecep[r.id];
+    if(!d) return;
+    const m = d[mes];
+    if(!m) return;
+    totalVentas += m.ventas;
+    totalMensajes += m.mensajes;
+    totalPlanes += m.planes3m;
+    if(m.puntaje > 0){ totalPuntaje += m.puntaje; conDataCount++; }
+  });
+  const avgPuntaje = conDataCount ? Math.round(totalPuntaje/conDataCount) : 0;
+  const pctConv = totalVentas && totalMensajes ? Math.round(totalVentas/totalMensajes*100) : 0;
+
+  document.getElementById('ovKpis').innerHTML=`
+    <div class="kpi"><div class="kpi-val" style="color:var(--accent)">${totalVentas}</div><div class="kpi-lbl">Ventas Nuevas</div><div class="kpi-sub">${MESES_FULL[mes]}</div></div>
+    <div class="kpi ${totalMensajes>=100?'':'warn'}"><div class="kpi-val">${totalMensajes}</div><div class="kpi-lbl">Mensajes Totales</div><div class="kpi-sub">obj: ${OBJ.mensajes * RECEPCIONISTAS.length}</div></div>
+    <div class="kpi"><div class="kpi-val">${totalPlanes}</div><div class="kpi-lbl">Planes 3 Meses</div><div class="kpi-sub">este mes</div></div>
+    <div class="kpi ${pctConv>=60?'':'warn'}"><div class="kpi-val">${pctConv}%</div><div class="kpi-lbl">Conversión Prom.</div><div class="kpi-sub">obj: 60%</div></div>
+    <div class="kpi ${avgPuntaje>=60?'':'warn'}"><div class="kpi-val">${avgPuntaje}</div><div class="kpi-lbl">Puntaje Promedio</div><div class="kpi-sub">de 100 pts</div></div>
+  `;
+
+  // Selector de mes
+  document.getElementById('mesSel').innerHTML = MESES.map((m,i)=>`
+    <div class="mes-tab ${i===currentMes?'active':''}" onclick="setMes(${i})">${m}</div>
+  `).join('');
+
+  // Cards recepcionistas
+  const grid = document.getElementById('recepGrid');
+  grid.innerHTML = '';
+  RECEPCIONISTAS.forEach(r=>{
+    const d = datosRecep[r.id];
+    const m = d ? d[mes] : null;
+    const pctV = m ? Math.round(m.ventas/OBJ.ventas*100) : 0;
+    const pctM = m ? Math.round(m.mensajes/OBJ.mensajes*100) : 0;
+    const semColor = !m || m.puntaje===0 ? 'var(--muted2)' : m.puntaje>=60?'#1a6b4a':m.puntaje>=40?'#e07c2a':'#d63b3b';
+    const semLabel = !m || m.puntaje===0 ? '—' : m.puntaje>=60?'Óptimo':m.puntaje>=40?'En progreso':'Crítico';
+
+    const card = document.createElement('div');
+    card.className = 'recep-card';
+    card.onclick = ()=>nav(r.id);
+    card.innerHTML=`
+      <div class="recep-header">
+        <div>
+          <div class="recep-avatar" style="background:${r.color}">${r.name[0]}</div>
+        </div>
+        <span class="badge" style="background:${semColor}18;color:${semColor};border:1px solid ${semColor}30;">${semLabel}</span>
+      </div>
+      <div style="margin-bottom:4px;"><span class="recep-name">${r.name}</span></div>
+      <div class="recep-sede"><i class="fas fa-map-marker-alt" style="margin-right:3px;color:${r.color};font-size:.65rem;"></i>${r.sede}</div>
+      <div class="recep-kpis">
+        <div class="recep-kpi">
+          <div class="recep-kpi-val" style="color:${pctV>=80?'#1a6b4a':pctV>=50?'#e07c2a':'#d63b3b'}">${m?m.ventas:0}</div>
+          <div class="recep-kpi-lbl">Ventas / ${OBJ.ventas}</div>
+          <div class="prog-bar" style="margin-top:4px;"><div class="prog-fill" style="width:${Math.min(pctV,100)}%;background:${pctV>=80?'#1a6b4a':pctV>=50?'#e07c2a':'#d63b3b'}"></div></div>
+        </div>
+        <div class="recep-kpi">
+          <div class="recep-kpi-val" style="color:${pctM>=80?'#1a6b4a':pctM>=50?'#e07c2a':'#d63b3b'}">${m?m.mensajes:0}</div>
+          <div class="recep-kpi-lbl">Mensajes / ${OBJ.mensajes}</div>
+          <div class="prog-bar" style="margin-top:4px;"><div class="prog-fill" style="width:${Math.min(pctM,100)}%;background:${pctM>=80?'#1a6b4a':pctM>=50?'#e07c2a':'#d63b3b'}"></div></div>
+        </div>
+      </div>
+      <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">
+        <span style="font-size:.72rem;color:var(--muted);">Puntaje: <b style="font-family:var(--mono);color:${semColor};">${m?m.puntaje||'—':'—'}</b></span>
+        <span style="font-size:.7rem;color:var(--muted);">→ ver detalle</span>
+      </div>
+    `;
+    grid.appendChild(card);
+  });
+
+  // Chart comparativa
+  if(chartComp){ chartComp.destroy(); chartComp=null; }
+  const ctx = document.getElementById('chartComparativa');
+  if(ctx){
+    chartComp = new Chart(ctx, {
+      type:'bar',
+      data:{
+        labels: RECEPCIONISTAS.map(r=>r.name),
+        datasets:[
+          {
+            label:'Ventas',
+            data: RECEPCIONISTAS.map(r=>datosRecep[r.id]?.[mes]?.ventas||0),
+            backgroundColor: RECEPCIONISTAS.map(r=>r.color+'33'),
+            borderColor: RECEPCIONISTAS.map(r=>r.color),
+            borderWidth:2, borderRadius:6
+          },
+          {
+            label:'Objetivo',
+            data: RECEPCIONISTAS.map(()=>OBJ.ventas),
+            type:'line', borderColor:'#e07c2a',
+            borderDash:[5,3], borderWidth:1.5,
+            pointRadius:0, fill:false
+          }
+        ]
+      },
+      options:{
+        responsive:true, maintainAspectRatio:false,
+        scales:{
+          y:{beginAtZero:true, grid:{color:'rgba(0,0,0,.04)'}, ticks:{color:'#6b7280'}},
+          x:{grid:{display:false}, ticks:{color:'#6b7280'}}
+        },
+        plugins:{legend:{position:'bottom', labels:{font:{size:11},color:'#6b7280'}}}
+      }
+    });
+  }
+}
+
+// ══════════════════════════════════════════════════
+// RENDER DETALLE
+// ══════════════════════════════════════════════════
+function renderDetalle(id){
+  currentRecep = id;
+  const r = RECEPCIONISTAS.find(x=>x.id===id);
+  const datos = datosRecep[id] || [];
+  const mes = currentMes;
+  const d = datos[mes] || {};
+
+  document.getElementById('recepTitle').textContent = r.name;
+  document.getElementById('recepSub').textContent = `${r.sede} · Control de Ventas ${new Date().getFullYear()}`;
+
+  // Tabs de mes
+  document.getElementById('recepMesTabs').innerHTML = MESES.map((m,i)=>`
+    <div class="mes-tab ${i===currentMes?'active':''}" onclick="setMesDetalle(${i})">${m}</div>
+  `).join('');
+
+  // KPIs del mes
+  const pctV = d.ventas ? Math.round(d.ventas/OBJ.ventas*100) : 0;
+  const pctM = d.mensajes ? Math.round(d.mensajes/OBJ.mensajes*100) : 0;
+  const pctConv = d.ventas && d.mensajes ? Math.round(d.ventas/d.mensajes*100) : 0;
+  document.getElementById('recepKpis').innerHTML=`
+    <div class="kpi ${pctV>=80?'':'pctV>=50?\'warn\':\'danger\''}">
+      <div class="kpi-val" style="color:${pctV>=80?'var(--accent)':pctV>=50?'var(--warn)':'var(--danger)'}">${d.ventas||0}</div>
+      <div class="kpi-lbl">Ventas Nuevas</div>
+      <div class="kpi-sub">obj: ${OBJ.ventas} · ${pctV}%</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-val" style="color:${pctM>=100?'var(--accent)':pctM>=60?'var(--warn)':'var(--danger)'}">${d.mensajes||0}</div>
+      <div class="kpi-lbl">Mensajes</div>
+      <div class="kpi-sub">obj: ${OBJ.mensajes} · ${pctM}%</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-val">${d.planes3m||0}</div>
+      <div class="kpi-lbl">Planes 3 Meses</div>
+      <div class="kpi-sub">obj: ${OBJ.planes3m}</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-val">${d.indumentaria||0}</div>
+      <div class="kpi-lbl">Indumentaria</div>
+      <div class="kpi-sub">obj: ${OBJ.indumentaria}</div>
+    </div>
+    <div class="kpi ${pctConv>=60?'':'warn'}">
+      <div class="kpi-val" style="color:${pctConv>=60?'var(--accent)':'var(--warn)'}">${pctConv}%</div>
+      <div class="kpi-lbl">Conversión</div>
+      <div class="kpi-sub">obj: 60%</div>
+    </div>
+    <div class="kpi ${(d.puntaje||0)>=60?'':'warn'}">
+      <div class="kpi-val" style="color:${(d.puntaje||0)>=60?'var(--accent)':(d.puntaje||0)>=40?'var(--warn)':'var(--danger)'}">${d.puntaje||'—'}</div>
+      <div class="kpi-lbl">Puntaje Total</div>
+      <div class="kpi-sub">de 100 pts</div>
+    </div>
+  `;
+
+  // Objetivos
+  const objs = [
+    {label:'Ventas de Nuevos', val:d.ventas||0, obj:OBJ.ventas},
+    {label:'Planes de 3 Meses', val:d.planes3m||0, obj:OBJ.planes3m},
+    {label:'Indumentaria/Suplementos', val:d.indumentaria||0, obj:OBJ.indumentaria},
+    {label:'Mensajes Enviados', val:d.mensajes||0, obj:OBJ.mensajes},
+    {label:'Días de Prueba', val:d.prueba||0, obj:OBJ.prueba},
+  ];
+  document.getElementById('recepObjs').innerHTML = objs.map(o=>{
+    const pct = Math.min(Math.round(o.val/o.obj*100),100);
+    const color = pct>=80?'#1a6b4a':pct>=50?'#e07c2a':'#d63b3b';
+    return `<div class="obj-row">
+      <span class="obj-name">${o.label}</span>
+      <div class="obj-bar-wrap">
+        <div class="prog-bar"><div class="prog-fill" style="width:${pct}%;background:${color}"></div></div>
+      </div>
+      <span class="obj-nums">${o.val}/${o.obj}</span>
+      <span class="obj-pct" style="color:${color}">${pct}%</span>
+    </div>`;
+  }).join('');
+
+  // Chart evolución
+  if(chartEvol){ chartEvol.destroy(); chartEvol=null; }
+  const ctx2 = document.getElementById('chartEvol');
+  if(ctx2){
+    chartEvol = new Chart(ctx2, {
+      type:'line',
+      data:{
+        labels: MESES,
+        datasets:[
+          {
+            label:'Ventas',
+            data: datos.map(d=>d.ventas||0),
+            borderColor: r.color,
+            backgroundColor: r.color+'22',
+            fill:true, tension:.4, borderWidth:2, pointRadius:3
+          },
+          {
+            label:'Objetivo',
+            data: MESES.map(()=>OBJ.ventas),
+            borderColor:'#e07c2a', borderDash:[5,3], borderWidth:1.5,
+            pointRadius:0, fill:false
+          }
+        ]
+      },
+      options:{
+        responsive:true, maintainAspectRatio:false,
+        scales:{
+          y:{beginAtZero:true, grid:{color:'rgba(0,0,0,.04)'}, ticks:{color:'#6b7280'}},
+          x:{grid:{display:false}, ticks:{color:'#6b7280',font:{size:10}}}
+        },
+        plugins:{legend:{display:false}}
+      }
+    });
+  }
+
+  // Tabla historial
+  document.getElementById('recepTable').innerHTML = datos.map((d,i)=>{
+    if(d.ventas===0 && d.mensajes===0 && d.puntaje===0) return '';
+    const pct = Math.round(d.ventas/OBJ.ventas*100);
+    const badge = d.puntaje>=60
+      ?`<span class="badge badge-g">Óptimo</span>`
+      :d.puntaje>=40
+      ?`<span class="badge badge-y">En progreso</span>`
+      :`<span class="badge badge-r">Crítico</span>`;
+    const activo = i===mes?'style="background:#f0fdf4;"':'';
+    return `<tr ${activo}>
+      <td style="font-weight:${i===mes?700:400}">${MESES_FULL[i]}${i===mes?' <span style="font-size:.65rem;color:var(--accent);">← actual</span>':''}</td>
+      <td style="font-family:var(--mono);font-weight:700;color:${pct>=80?'#1a6b4a':pct>=50?'#e07c2a':'#d63b3b'}">${d.ventas} <span style="font-size:.65rem;color:var(--muted)">/ ${OBJ.ventas}</span></td>
+      <td style="font-family:var(--mono)">${d.planes3m}</td>
+      <td style="font-family:var(--mono)">${d.indumentaria}</td>
+      <td style="font-family:var(--mono)">${d.mensajes}</td>
+      <td style="font-family:var(--mono)">${d.prueba}</td>
+      <td style="font-family:var(--mono);font-weight:700">${d.puntaje||'—'}</td>
+      <td>${d.puntaje>0?badge:'<span style="color:var(--muted);font-size:.72rem;">Sin datos</span>'}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ══════════════════════════════════════════════════
+// NAVEGACIÓN
+// ══════════════════════════════════════════════════
+function nav(id){
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.sb-item').forEach(s=>s.classList.remove('active'));
+
+  const recepIds = RECEPCIONISTAS.map(r=>r.id);
+  if(id==='overview'){
+    document.getElementById('section-overview').classList.add('active');
+    document.querySelector('.sb-item[onclick="nav(\'overview\')"]').classList.add('active');
+  } else if(recepIds.includes(id)){
+    document.getElementById('section-recep').classList.add('active');
+    document.querySelector(`.sb-item[onclick="nav('${id}')"]`)?.classList.add('active');
+    renderDetalle(id);
+  }
+  window.scrollTo(0,0);
+}
+
+function setMes(i){
+  currentMes = i;
+  renderOverview();
+}
+function setMesDetalle(i){
+  currentMes = i;
+  renderDetalle(currentRecep);
+}
+
+// ══════════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════════
+(async()=>{
+  await cargarTodos();
+  document.getElementById('loadOv').style.opacity='0';
+  setTimeout(()=>{ document.getElementById('loadOv').style.display='none'; }, 300);
+  renderOverview();
+})();
+</script>
+</body>
+</html>
