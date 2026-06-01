@@ -377,71 +377,73 @@ function parsearCSVVentas(csv){
   const lines = csv.split('\n').map(l=>l.split(','));
   const meses = [];
 
-  // El CONTROL DE VENTAS tiene esta estructura:
-  // Fila "ventas de Nuevos": OBJ, CTRL_ENE, OBJ, CTRL_FEB...
-  // Agrupadas de a 2 cols por mes (Objetivos, control)
-  // Buscamos las filas con métricas
+  // Buscar la sección CONTROL DE VENTAS (puede estar al inicio o al final)
+  let startRow = 0;
+  for(let i=0; i<lines.length; i++){
+    const cell = (lines[i].join(',') || '').toLowerCase();
+    if(cell.includes('control de ventas') && cell.includes('enero')){
+      startRow = i;
+      break;
+    }
+    if(cell.includes('control de ventas') && !cell.includes('planilla')){
+      // Buscar la fila con "Enero" cerca
+      for(let j=i; j<Math.min(i+5,lines.length); j++){
+        if((lines[j].join(',') || '').toLowerCase().includes('enero')){
+          startRow = j - 1;
+          break;
+        }
+      }
+      if(startRow > 0) break;
+      startRow = i;
+      break;
+    }
+  }
 
-  let ventasRow, planes3mRow, indumRow, msjRow, pruebaRow, averigRow, puntajeRow;
+  // Encontrar filas de métricas relativas al startRow
+  let ventasRow=-1, planes3mRow=-1, indumRow=-1, msjRow=-1, pruebaRow=-1, averigRow=-1, puntajeRow=-1;
 
-  for(let i=0; i<Math.min(lines.length,60); i++){
+  for(let i=startRow; i<Math.min(startRow+60, lines.length); i++){
     const row = lines[i];
-    const cell = (row[1]||row[0]||'').toLowerCase().trim();
+    const cell = (row[1]||row[0]||'').toLowerCase().trim().replace(/[^a-záéíóúñ0-9 ]/g,'');
     if(cell.includes('ventas de nuevos') || cell.includes('ventas nuevos')) ventasRow = i;
     else if(cell.includes('planes de 3') || cell.includes('plan de 3')) planes3mRow = i;
-    else if(cell.includes('indumentaria') || cell.includes('venta de indum')) indumRow = i;
-    else if(cell.includes('mensajes enviados') || cell.includes('mensajes')) msjRow = i;
+    else if(cell.includes('indumentaria') || cell.includes('venta de indum') || cell.includes('venta de indumen')) indumRow = i;
+    else if((cell.includes('mensajes') && cell.includes('enviados')) || cell.includes('mensajes enviados')) msjRow = i;
     else if(cell.includes('dias de prueba') || cell.includes('días de prueba')) pruebaRow = i;
     else if(cell.includes('averiguadores')) averigRow = i;
-    else if(cell.includes('puntaje total')) puntajeRow = i;
+    else if(cell.includes('puntaje')) puntajeRow = i;
   }
-
-  // Columnas: los datos están en pares (obj, ctrl) por mes
-  // Enero: cols 3,4 | Febrero: cols 5,6 | Marzo: cols 7,8 | Abril: cols 9,10
-  // Mayo: cols 3,4 (del bloque siguiente) etc.
-  // PERO hay que encontrar los offsets correctos parseando el CSV
-
-  // Estrategia: buscar "Enero" en las filas de encabezado y mapear columnas
-  // El patrón es: ,Objetivos,control,Objetivos,control,...
-  let colOffset = -1;
-  for(let i=0; i<Math.min(lines.length,10); i++){
-    const row = lines[i];
-    for(let j=0; j<row.length; j++){
-      if((row[j]||'').trim().toLowerCase().includes('enero')){
-        colOffset = j;
-        break;
-      }
-    }
-    if(colOffset>=0) break;
-  }
-
-  // Si no encontramos Enero, usar offset por defecto (col 3)
-  if(colOffset < 0) colOffset = 3;
 
   function getVal(rowIdx, mesIdx){
-    if(rowIdx === undefined || rowIdx < 0) return 0;
-    const row = lines[rowIdx];
-    if(!row) return 0;
-    // Para meses 0-3 (ENE-ABR): colOffset + mesIdx*2 + 1 (ctrl)
-    // Para meses 4-7 (MAY-AGO): siguiente bloque
-    // Para meses 8-11 (SEP-DIC): tercer bloque
+    if(rowIdx < 0 || rowIdx === undefined) return 0;
+    // Cada bloque de 4 meses está en una sección separada del CSV
+    // Buscar la Nth ocurrencia de la misma fila de métrica
     const bloque = Math.floor(mesIdx / 4);
     const mesEnBloque = mesIdx % 4;
-    // Buscar la fila de ese bloque
-    const col = colOffset + mesEnBloque * 2 + 1; // +1 para "control"
-    // Si hay múltiples bloques, la fila se repite
-    // Buscamos la fila con el mismo label pero en el bloque correcto
+
+    // Encontrar la fila correcta del bloque
     let targetRow = rowIdx;
     if(bloque > 0){
-      // Buscar la siguiente ocurrencia del mismo label
-      const label = (lines[rowIdx][1]||lines[rowIdx][0]||'').toLowerCase().trim();
+      const baseLabel = (lines[rowIdx]?.[1]||lines[rowIdx]?.[0]||'').toLowerCase().trim().replace(/[^a-záéíóúñ0-9 ]/g,'');
       let count = 0;
-      for(let i=0; i<lines.length; i++){
-        const c = (lines[i][1]||lines[i][0]||'').toLowerCase().trim();
-        if(c === label){ count++; if(count-1 === bloque){ targetRow = i; break; } }
+      for(let i=rowIdx+1; i<lines.length; i++){
+        const c = (lines[i]?.[1]||lines[i]?.[0]||'').toLowerCase().trim().replace(/[^a-záéíóúñ0-9 ]/g,'');
+        if(c === baseLabel || (c.length>5 && baseLabel.includes(c.substring(0,8)))){
+          count++;
+          if(count === bloque){ targetRow = i; break; }
+        }
       }
     }
-    const v = (lines[targetRow]?.[col]||'').trim().replace('#DIV/0!','0').replace(/[^\d.-]/g,'');
+
+    const row = lines[targetRow];
+    if(!row) return 0;
+
+    // Las columnas ctrl están en posiciones impares: 4, 6, 8, 10 para bloque 0
+    // Buscar columna "control" del mes en el bloque
+    // Pattern: ,Objetivos,control,Objetivos,control,...
+    // Col 3=obj ENE, col4=ctrl ENE, col5=obj FEB, col6=ctrl FEB...
+    const col = 3 + mesEnBloque * 2 + 1; // +1 para ctrl
+    const v = (row[col]||'').trim().replace(/#DIV\/0!|#DIV\/0\\!/g,'0').replace(/[^\d.-]/g,'');
     return parseFloat(v)||0;
   }
 
